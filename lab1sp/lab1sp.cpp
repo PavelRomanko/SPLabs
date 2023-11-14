@@ -1,5 +1,6 @@
 ﻿#include "framework.h"
 #include "lab1sp.h"
+#pragma comment(lib, "Msimg32.lib")
 
 // Глобальные переменные
 HBITMAP hBitmap = NULL;
@@ -9,7 +10,7 @@ int imageWidth = 100;
 int imageHeight = 100;
 int imageLeft = 0;
 int imageTop = 0;
-const wchar_t* imagePath = L"sample.bmp";
+const wchar_t* imagePath = L"ship.bmp";
 const int windowWidth = 800;
 const int windowHeight = 600;
 const int imageSpeed = 5;
@@ -76,40 +77,25 @@ void UpdateImagePosition()
 	// Проверка состояния клавиш W, A, S, D
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		if (imageTop > 0)
-		{
-			imageTop -= imageSpeed;
-		}
+		imageTop -= imageSpeed;
 	}
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		if (imageLeft > 0)
-		{
-			imageLeft -= imageSpeed;
-		}
+		imageLeft -= imageSpeed;
 	}
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
-		if (imageTop + imageHeight < clientHeight)
-		{
-			imageTop += imageSpeed;
-		}
+		imageTop += imageSpeed;
 	}
 	if (GetAsyncKeyState('D') & 0x8000)
 	{
-		if (imageLeft + imageWidth < clientWidth)
-		{
-			imageLeft += imageSpeed;
-		}
+		imageLeft += imageSpeed;
 	}
 }
 
 // Функция обработки сообщений окна
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static HDC hdcBuffer;
-	static HBITMAP hbmBuffer;
-
 	switch (uMsg)
 	{
 	case WM_CREATE:
@@ -117,23 +103,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		// Создание таймера
 		timerId = SetTimer(hwnd, 1, 10, NULL);
 
-		//Загрузка изображения
+		// Загрузка изображения
 		hBitmap = (HBITMAP)LoadImage(NULL, imagePath, IMAGE_BITMAP, imageWidth, imageHeight, LR_LOADFROMFILE);
-
-		// Создание контекста устройства и битмапа для двойной буферизации
-		HDC hdc = GetDC(hwnd);
-		hdcBuffer = CreateCompatibleDC(hdc);
-		hbmBuffer = CreateCompatibleBitmap(hdc, windowWidth, windowHeight);
-		SelectObject(hdcBuffer, hbmBuffer);
-		ReleaseDC(hwnd, hdc);
 	}
 	return 0;
 
 	case WM_DESTROY:
 	{
-		//Высвобождение памяти
-		DeleteDC(hdcBuffer);
-		DeleteObject(hbmBuffer);
+		// Высвобождение памяти
 		if (hBitmap != NULL)
 		{
 			DeleteObject(hBitmap);
@@ -155,18 +132,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hwnd, &ps);
 
+		// Создание контекста устройства и битмапа для двойной буферизации
+		HDC hdcBuffer = CreateCompatibleDC(hdc);
+		RECT rect;
+		GetClientRect(hwnd, &rect);
+		HBITMAP hbmBuffer = CreateCompatibleBitmap(hdc, rect.left + rect.right, rect.top + rect.bottom);
+		SelectObject(hdcBuffer, hbmBuffer);
+
 		// Рисование на втором буфере
 		FillRect(hdcBuffer, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
 		HDC hdcMem = CreateCompatibleDC(hdcBuffer);
 		SelectObject(hdcMem, hBitmap);
-		BitBlt(hdcBuffer, imageLeft, imageTop, imageWidth, imageHeight, hdcMem, 0, 0, SRCCOPY);
+		COLORREF transparentColor = RGB(0, 0, 0);
+		TransparentBlt(hdcBuffer, imageLeft, imageTop, imageWidth, imageHeight, hdcMem, 0, 0, imageWidth, imageHeight, transparentColor);
 
 		// Копирование содержимого второго буфера на экран
 		BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
 			ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top,
 			hdcBuffer, ps.rcPaint.left, ps.rcPaint.top, SRCCOPY);
 
+		// Высвобождение памяти
 		DeleteDC(hdcMem);
+		DeleteDC(hdcBuffer);
+		DeleteObject(hbmBuffer);
 
 		EndPaint(hwnd, &ps);
 	}
@@ -183,41 +171,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (isShiftKeyDown)
 		{
 			// Прокрутка по горизонтали
-			if (delta > 0 && imageLeft > 0)
+			if (delta > 0)
 			{
 				imageLeft -= imageSpeed;
 			}
 			else if (delta < 0)
 			{
-				// Получение размеров клиентской области окна
-				RECT clientRect;
-				GetClientRect(hwnd, &clientRect);
-				int clientWidth = clientRect.right - clientRect.left;
-
-				if (imageLeft + imageWidth < clientWidth)
-				{
-					imageLeft += imageSpeed;
-				}
+				imageLeft += imageSpeed;
 			}
 		}
 		else
 		{
 			// Прокрутка по вертикали
-			if (delta > 0 && imageTop > 0)
+			if (delta > 0)
 			{
 				imageTop -= imageSpeed;
 			}
 			else if (delta < 0)
 			{
-				// Получение размеров клиентской области окна
-				RECT clientRect;
-				GetClientRect(hwnd, &clientRect);
-				int clientHeight = clientRect.bottom - clientRect.top;
-
-				if (imageTop + imageHeight < clientHeight)
-				{
-					imageTop += imageSpeed;
-				}
+				imageTop += imageSpeed;
 			}
 		}
 
@@ -230,7 +202,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		// Вызов функции обновления позиции изображения
 		UpdateImagePosition();
-
+		// Проверка колизии
+		RECT rect;
+		GetClientRect(hwnd, &rect);
+		if (imageLeft < rect.left)
+		{
+			imageLeft = rect.left + 10;
+		}
+		else if ((imageLeft + imageWidth) > (rect.left + rect.right))
+		{
+			imageLeft = rect.left + rect.right - imageWidth - 10;
+		}
+		else if (imageTop < rect.top)
+		{
+			imageTop = rect.top + 10;
+		}
+		else if ((imageTop + imageHeight) > (rect.top + rect.bottom))
+		{
+			imageTop = rect.top + rect.bottom - imageHeight - 10;
+		}
 		// Обновление окна
 		InvalidateRect(hwnd, NULL, FALSE);
 	}
