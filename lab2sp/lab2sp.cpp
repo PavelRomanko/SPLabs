@@ -6,8 +6,9 @@
 
 // Глобальные переменные
 std::vector<std::wstring> tableData; // Данные таблицы
-int tableRowCount = 3; // Количество строк таблицы
-int tableColumnCount = 3; // Количество столбцов таблицы
+int tableRowCount = 4; // Количество строк таблицы
+int tableColumnCount = 4; // Количество столбцов таблицы
+std::string filePath = "text.txt";
 
 // Прототипы функций
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -17,7 +18,7 @@ void DrawTable(HWND hwnd, HDC hdc, RECT clientRect);
 // Функция загрузки данных таблицы из текстового файла
 void LoadTableData()
 {
-    std::wifstream file("text.txt");
+    std::wifstream file(filePath);
     if (!file)
     {
         MessageBox(NULL, L"Ошибка при открытии файла!", L"Ошибка", MB_OK | MB_ICONERROR);
@@ -29,7 +30,7 @@ void LoadTableData()
     while (std::getline(file, line))
     {
         // Удаление пробелов из строки
-        //line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
         tableData.push_back(line);
     }
 
@@ -55,14 +56,14 @@ void DrawTable(HWND hwnd, HDC hdc, RECT clientRect)
             cellRect.right = (col + 1) * cellWidth;
             cellRect.bottom = (row + 1) * cellHeight;
 
-            int fontSize = 50; // Начальный размер шрифта
+            int fontSize = 14; // Начальный размер шрифта
             HFONT hFont = CreateFont(fontSize, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Arial");
 
             SelectObject(hdc, hFont);
 
             RECT textRect = cellRect;
-            DrawText(hdc, tableData[0].c_str(), -1, &textRect, DT_CENTER | DT_CALCRECT | DT_WORDBREAK);
+            DrawText(hdc, tableData[0].c_str(), -1, &textRect, DT_CENTER | DT_CALCRECT | DT_EDITCONTROL | DT_WORDBREAK);
 
             while (textRect.right - textRect.left > cellRect.right - cellRect.left || textRect.bottom - textRect.top > cellRect.bottom - cellRect.top)
             {
@@ -74,12 +75,12 @@ void DrawTable(HWND hwnd, HDC hdc, RECT clientRect)
                 SelectObject(hdc, hFont);
 
                 textRect = cellRect;
-                DrawText(hdc, tableData[0].c_str(), -1, &textRect, DT_CENTER | DT_CALCRECT | DT_WORDBREAK);
+                DrawText(hdc, tableData[0].c_str(), -1, &textRect, DT_CENTER | DT_CALCRECT | DT_EDITCONTROL | DT_WORDBREAK);
             }
 
             SelectObject(hdc, hFont);
 
-            DrawText(hdc, tableData[0].c_str(), -1, &cellRect, DT_CENTER | DT_WORDBREAK);
+            DrawText(hdc, tableData[0].c_str(), -1, &cellRect, DT_CENTER | DT_EDITCONTROL | DT_WORDBREAK);
 
             // Отрисовка границ ячеек
             DrawEdge(hdc, &cellRect, EDGE_RAISED, BF_LEFT | BF_TOP);
@@ -90,6 +91,14 @@ void DrawTable(HWND hwnd, HDC hdc, RECT clientRect)
 // Основная функция программы
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    //Получение параметров через консоль
+    if (__argc == 4)
+    {
+        tableRowCount = std::stoi(__argv[1]);
+        tableColumnCount = std::stoi(__argv[2]);
+        std::string filePath = __argv[3];
+    }
+
     // Регистрация класса окна
     const wchar_t CLASS_NAME[] = L"TableWindowClass";
 
