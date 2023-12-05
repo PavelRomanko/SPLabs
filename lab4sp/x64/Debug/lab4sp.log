@@ -1,0 +1,5 @@
+﻿  lab4sp.cpp
+C:\Projects\VisualStudioProjects\lab4sp\lab4sp.cpp(85,52): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Projects\VisualStudioProjects\lab4sp\lab4sp.cpp(85,52): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
+C:\Projects\VisualStudioProjects\lab4sp\lab4sp.cpp(88,77): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  lab4sp.vcxproj -> C:\Projects\VisualStudioProjects\lab4sp\x64\Debug\lab4sp.exe
